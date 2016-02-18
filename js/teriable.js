@@ -1,5 +1,5 @@
 /*$$$$$$$$$$$$$$$$$$$ COPYRIGHT 2016 Andrew V. Butt Sr. $$$$$$$$$$$$$$$$$$$$$$$*/
-/*$$$$$$$$$$$$$$$$$$$    Teriable Version 0.1.1         $$$$$$$$$$$$$$$$$$$$$$$*/
+/*$$$$$$$$$$$$$$$$$$$    Teriable Version 0.1.2         $$$$$$$$$$$$$$$$$$$$$$$*/
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 
 // INIT OBJECTS
@@ -163,6 +163,7 @@ window.addEventListener('DOMContentLoaded', function(){
 			'<input id="perlin-2d-seed" value="420420"><BR />'+
 			'<label for="perlin-2d-mode">perlin-2d-mode</label>'+
 			'<select id="perlin-2d-mode" value="Absolute"><option>Absolute</option><option>Additive</option><option>Subtractive</option><option>Mask</option></select><BR />'+
+			'<action act="item-move-up">move-up</action><action act="item-move-down">move-down</action><action act="item-delete">delete</action><BR />'+
 			'<hiddenTag itype ="Perlin2D" />';
 			
 					
@@ -171,6 +172,7 @@ window.addEventListener('DOMContentLoaded', function(){
 			'<input id="clamp-upper" value="100"><BR />'+
 			'<label for="clamp-lower">clamp-lower</label>'+
 			'<input id="clamp-lower" value="-100"><BR />'+
+			'<action act="item-move-up">move-up</action><action act="item-move-down">move-down</action><action act="item-delete">delete</action><BR />'+
 			'<hiddenTag itype ="Clamp" />';
 				 
 		
@@ -227,7 +229,8 @@ window.addEventListener('DOMContentLoaded', function(){
 						setTimeout(function(){TERIABLE.ApplyItem(iCount+1, 0);},0);
 				}
 			}else{
-				setTimeout(function(){TERIABLE.Action.UpdateProgressBar(0,0);},0);
+			setTimeout(function(){TERIABLE.Action.UpdateProgressBar(0,0);},0);
+			TERIABLE.Action.fadeGui();
 			return	
 			}
 		}
@@ -289,18 +292,38 @@ window.addEventListener('DOMContentLoaded', function(){
 	
 	TERIABLE.Action.fadeGui();
 	
-	$( "action" ).click(function(e) {
-  		switch ($(e.target).attr('act')){
-			case "create-new-region": 
-				TERIABLE.Action.CreateNewRegion(scene);
-				break;
-			case "add-item": 
-				TERIABLE.AddItem();
-				break
-			case "apply-noise": 
-				TERIABLE.ApplyItem(0,0);
-				break		
+	$( "gui" ).click(function(e) {
+  		var element = $(e.target);
+		
+	if(element.attr('act')){
+		var action = element.attr('act');
+		if(action == "create-new-region"){
+			TERIABLE.Action.CreateNewRegion(scene);		
 		}
+		if(action == "add-item"){
+			TERIABLE.AddItem();		
+		}
+		if(action == "apply-noise"){
+			TERIABLE.Action.fadeGui();
+			TERIABLE.ApplyItem(0,0);		
+		}
+		if(action == "item-move-up"){
+			var parentItem = element.parent();
+			if(parentItem.prev('item').length){
+				parentItem.prev('item').before(parentItem);
+			}	
+		}
+		if(action == "item-move-down"){
+			var parentItem = parentItem.parent();
+			if(parentItem.next('item').length){
+				parentItem.next('item').after(parentItem);
+			}	
+		}
+		if(action == "item-delete"){
+			var parentItem = element.parent();
+			parentItem.remove();
+		}
+	}
 	});
 	
 	
