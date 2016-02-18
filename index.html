@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Teriable Beta 0.1.2</title>
+<link href="css/gui.css" rel="stylesheet" type="text/css" />
+ 	
+	
+	<script src="js/jquery-2.2.0.min.js"></script>
+    <script src="js/babylon.js"></script>  
+	<script src="js/perlin-noise-simplex.js"></script>  
+    <script src="js/teriable.js"></script>
+    
+
+   
+    
+    
+
+</head>
+
+<body>
+<gui>
+<pane id='home' class='active'>
+
+<label for="block-size-x">block-size-x</label>
+<input id="block-size-x" value="100"><BR />
+<label for="block-size-y">block-size-y</label>
+<input id="block-size-y" value="100"><BR />
+<label for="block-detail">block-detail</label>
+<input id="block-detail" value="100"><BR />
+
+<label for="region-size-x">region-size-x</label>
+<input id="region-size-x" value="3"><BR />
+<label for="region-size-y">region-size-y</label>
+<input id="region-size-y" value="3"><BR /><BR />
+
+<action act='create-new-region'>Create New Region</action>
+
+</pane>
+<pane id='main'>
+	<div id='NoiseStack'>
+   	</div>
+    <div id='commands'>
+    <action act='add-item'>Add Item</action><action act='apply-noise'>Apply Noise</action>
+    </div>
+</pane>
+</gui>
+
+<canvas id="renderCanvas"></canvas>
+</body>
+</html>

@@ -1,0 +1,129 @@
+@charset "utf-8";
+/* CSS Document */
+
+    html, body {
+        overflow: hidden;
+        width   : 100%;
+        height  : 100%;
+        margin  : 0;
+        padding : 0;
+    }
+
+    #renderCanvas {
+        width   : 100%;
+        height  : 100%;
+        touch-action: none;
+    }
+	
+
+gui{
+	display:block;
+	position:absolute;
+	width:25vw;
+	height:100vh;
+	right: 0;
+	background: rgba(0,0,0,0.8);
+	z-index:+1;
+}
+
+gui pane{
+	display:none;
+	position:absolute;
+	background: rgba(180,180,180,0.2);
+	z-index:+1;
+	font-size:2vh;
+	left:0.5em;right:0.5em;top:0.5em;bottom:0.5em;
+	font-family:"Lucida Console", Monaco, monospace;
+	color:white;
+	  text-shadow:
+   -1px -1px 0 #000,  
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+     1px 1px 0 #000;
+		
+}
+
+gui pane.active{
+		
+}
+
+
+
+gui pane input{
+	width:60px;	
+}
+
+#NoiseStack{
+	position:absolute;
+	left:3px;
+	right:3px;
+	top:3px;
+	bottom:60px;
+	background:rgba(0,0,0,0.2);	
+	text-align:center;
+	padding:0.2em;
+	overflow-y: auto;
+}
+#NoiseStack item{
+	display:block;
+	width:98%;
+	height:auto;
+	position:relative;
+	background:rgba(153,153,153,0.2);
+	margin-bottom: 0.2em;
+}
+#commands{
+	position:absolute;
+	left:3px;
+	right:3px;
+	bottom:3px;
+	height: 48px;
+	text-align:center;
+	padding:0.2em;		
+}
+
+action{
+	display:inline-block;
+	position:relative;
+	width:auto;	height:auto;
+	font-size:0.8em;
+	font-weight:bold;
+	padding:0.5em 1em;
+	background:rgba(204,204,204,0.7);
+	cursor:pointer;
+	  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* IE/Edge */
+  user-select: none; 
+	
+}
+
+action:hover{
+	background:rgba(255,255,255,0.2);	
+}
+
+action:active{
+	background:rgba(255,255,255,0.8);	
+}
+
+progressBar{
+	display:block;
+	position:absolute;
+	width:400px;	height:20px;
+	background:rgba(0,0,0,0.6);
+	left:50%;
+	top:50%;
+	margin-top:-10px; margin-left:-200px;
+}
+
+progressBar span{
+	display:block;
+	position:absolute;
+	left:3px;
+	top:3px;
+	bottom:3px;
+	width:0%;
+	background:rgba(255,255,255,0.4);
+}
