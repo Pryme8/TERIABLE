@@ -6,7 +6,10 @@
 var TERIABLE = TERIABLE || {}; TERIABLE.Action = {}; TERIABLE.Region = []; 
 
 window.addEventListener('DOMContentLoaded', function(){
-		
+	
+	
+	
+				
 		/*!!!!!!!!!!!!!! TERIABLE GENERATOR FUNCTIONS !!!!!!!!!!!!!!!*/
 		/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 		
@@ -15,8 +18,18 @@ window.addEventListener('DOMContentLoaded', function(){
 			
 			this._ground.position.x = posX;
 			this._ground.position.z = posZ;
-			this._ground.material = new BABYLON.StandardMaterial("rMat", scene);
-			this._ground.material.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+			
+		
+		
+			this._ground.material = new BABYLON.ShaderMaterial("teriableBasic", scene, {
+                    vertex: "teriableBasic",
+                    fragment: "teriableBasic",
+                },
+                    {
+                        attributes: ["position", "normal", "uv"],
+                        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
+                    });
+					
 			TERIABLE.Region.push(this._ground);
 			//console.log("Made_Block"+id);
 			//console.log("TERIABLE.Regions.length: "+TERIABLE.Region.length);
@@ -35,7 +48,13 @@ window.addEventListener('DOMContentLoaded', function(){
 			var regionWidth = (bsX*rsX);
 			var regionHeight = (bsY*rsY);
 			
+			TERIABLE.regionWidth = regionWidth;
+			TERIABLE.regionHeight = regionHeight;
+			TERIABLE.scene = scene;
+			
+			
 			setTimeout(function(){TERIABLE.Action.RegionGenerate(scene, 0, 0, bsX, bsY, rsX, rsY, detail, regionWidth, regionHeight);},0);	
+			TERIABLE.ResetCam();
 			
 		}
 		
@@ -112,6 +131,9 @@ window.addEventListener('DOMContentLoaded', function(){
 						}
 					}
 					
+					
+
+					
 					if(mode!="Mask"){
 					block.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertexData, 0, 0);
 					return;
@@ -119,6 +141,75 @@ window.addEventListener('DOMContentLoaded', function(){
 					
 						if($(activeItem).next('item').length){
 							$(activeItem).next('item').attr('maskArray',xDiv+','+yDiv+','+seed);
+							return;
+						}else{
+						return;	
+						}
+					}
+			}
+			
+			//WHORLEY 2D
+			
+			//PERLIN 2D
+			if(state =="WorleyNoise2D"){
+				console.log(state+" applyed");
+				
+				var points = $(activeItem).children("#Worley-2d-points").val();
+				var seed = $(activeItem).children("#Worley-2d-seed").val();
+				var height = $(activeItem).children("#Worley-2d-height").val();
+				var nth = $(activeItem).children("#Worley-2d-nth").val();
+				var style = $(activeItem).children("#Worley-2d-style").val();
+				var mode = $(activeItem).children("#Worley-2d-mode").val();
+				
+				
+				
+				var maskTrigger = 0;
+				var maskArray = [];
+				if($(activeItem).attr('maskArray')){
+					maskTrigger = 1;
+					maskArray = $(activeItem).attr('maskArray').split(',');
+				}
+				
+					
+				var worly = new WorleyNoise2D(points, seed, TERIABLE.regionWidth, TERIABLE.regionHeight, nth, style);
+				var vertexData = block.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+				
+				var maskIndex = 0;
+				for (var i = 0; i < vertexData.length; i += 3) {
+						var x = vertexData[i]+block.position.x, y = vertexData[i+1]+block.position.y ,z = vertexData[i+2]+block.position.z;
+					var worlyReturn = worly._getPointValue(x,z);
+					
+				if(mode!="Mask"){
+							var maskAmount = 1;
+							if(maskTrigger){
+								var worlyMask =  new WorleyNoise2D(maskArray[0], maskArray[1], TERIABLE.regionWidth, TERIABLE.regionHeight, maskArray[2], maskArray[3])
+								maskAmount = worlyMask._getPointValue(x,z);
+							}
+					
+						
+				switch (mode){
+							case "Absolute":
+								vertexData[i+1] = (worlyReturn*height)*maskAmount;
+								break;
+							case "Additive":
+								vertexData[i+1] += (worlyReturn*height)*maskAmount;
+								break;
+							case "Subtractive":
+								vertexData[i+1] -= (worlyReturn*height)*maskAmount;
+								break;		
+						}
+				
+				
+				}
+			}
+							
+			if(mode!="Mask"){
+					block.updateVerticesData(BABYLON.VertexBuffer.PositionKind, vertexData, 0, 0);
+					return;
+					}else{
+					
+						if($(activeItem).next('item').length){
+							$(activeItem).next('item').attr('maskArray',points+','+seed+','+nth+','+style);
 							return;
 						}else{
 						return;	
@@ -165,6 +256,22 @@ window.addEventListener('DOMContentLoaded', function(){
 			'<select id="perlin-2d-mode" value="Absolute"><option>Absolute</option><option>Additive</option><option>Subtractive</option><option>Mask</option></select><BR />'+
 			'<action act="item-move-up">move-up</action><action act="item-move-down">move-down</action><action act="item-delete">delete</action><BR />'+
 			'<hiddenTag itype ="Perlin2D" />';
+			
+			TERIABLE.NoiseStack.Items.WorleyNoise2D = 
+			'<label for="Worley-2d-seed">Worley-2d-seed</label>'+
+			'<input id="Worley-2d-seed" value="3412"><BR />'+
+			'<label for="Worley-2d-points">Worley-2d-points</label>'+
+			'<input id="Worley-2d-points" value="40"><BR />'+
+			'<label for="Worley-2d-nth">Worley-2d-nth</label>'+
+			'<input id="Worley-2d-nth" value="2"><BR />'+
+			'<label for="Worley-2d-style">Worley-2d-style</label>'+
+			'<select id="Worley-2d-style" value="euclidean"><option>euclidean</option><option>euclidean2</option><option>manhattan</option><option>manhattan2</option><option>chebyshevish</option><option>chebyshevish2</option><option>chebyshevish3</option><option>chebyshevish4</option><option>valentine</option><option>valentine2</option><option>valentine3</option><option>valentine4</option></select><BR />'+
+			'<label for="Worley-2d-height">Worley-2d-height</label>'+
+			'<input id="Worley-2d-height" value="20"><BR />'+
+			'<label for="Worley-2d-mode">Worley-2d-mode</label>'+
+			'<select id="Worley-2d-mode" value="Absolute"><option>Absolute</option><option>Additive</option><option>Subtractive</option><option>Mask</option></select><BR />'+
+			'<action act="item-move-up">move-up</action><action act="item-move-down">move-down</action><action act="item-delete">delete</action><BR />'+
+			'<hiddenTag itype ="WorleyNoise2D" />';
 			
 					
 			TERIABLE.NoiseStack.Items.Clamp = 
@@ -231,6 +338,7 @@ window.addEventListener('DOMContentLoaded', function(){
 			}else{
 			setTimeout(function(){TERIABLE.Action.UpdateProgressBar(0,0);},0);
 			TERIABLE.Action.fadeGui();
+			
 			return	
 			}
 		}
@@ -263,10 +371,21 @@ window.addEventListener('DOMContentLoaded', function(){
 			}
 			
 			if($('gui pane.active').is(":visible")){
+				$('gui').css("pointer-events","none");
 			$('gui pane.active').fadeOut(320);	
 			}else{
+				$('gui').css("pointer-events","initial");
 			$('gui pane.active').fadeIn(320);	
 			}
+		}
+		
+		
+		TERIABLE.ResetCam = function(){
+			var scene = TERIABLE.scene;
+			cam =  scene.activeCamera;
+			cam.position = new BABYLON.Vector3(0, TERIABLE.regionHeight, ((TERIABLE.regionWidth+TERIABLE.regionHeight)/1.5)*-1);
+			cam.setTarget(BABYLON.Vector3.Zero());
+			
 		}
 		/*!!!!!!!! END UI STUFF !!!!!!!!*/
 		/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -281,10 +400,56 @@ window.addEventListener('DOMContentLoaded', function(){
 	
 	var createScene = function () {
     var scene = new BABYLON.Scene(engine);
+	
+	
+	
+	//SHADERS?
+		BABYLON.Effect.ShadersStore["teriableBasicVertexShader"]=                "precision highp float;\r\n"+
 
+                "// Attributes\r\n"+
+                "attribute vec3 position;\r\n"+
+                "attribute vec2 uv;\r\n"+
+
+                "// Uniforms\r\n"+
+                "uniform mat4 world;\r\n"+
+                "uniform mat4 worldViewProjection;\r\n"+
+
+                "// Varying\r\n"+
+                "varying vec2 vUV;\r\n"+
+                "varying vec3 vPositionW;\r\n"+
+
+                "void main(void) {\r\n"+
+                "    \r\n"+
+                "    vec4 worldPos = world * vec4(position, 1.0);\r\n"+
+                "	vPositionW = vec3(worldPos);\r\n"+
+                "	\r\n"+
+                "    gl_Position = worldViewProjection * vec4(position, 1.0);\r\n"+
+
+                "    vUV = uv;\r\n"+
+                "}\r\n";
+				
+				BABYLON.Effect.ShadersStore["teriableBasicFragmentShader"]=                "precision highp float;\r\n"+
+
+                "varying vec2 vUV;\r\n"+
+                "varying vec3 vPositionW;\r\n"+
+
+                "uniform sampler2D textureSampler;\r\n"+
+                "uniform vec3 vLimits;\r\n"+
+
+                "void main(void) {\r\n"+
+                "    \r\n"+
+
+                "		float lowLimit = vLimits.x - 100.;\r\n"+
+                "		float gradient = clamp((vPositionW.y - lowLimit) / ((vLimits.x + 100.) - lowLimit), 0., 1.);\r\n"+
+                "    gl_FragColor = vec4 (gradient, gradient, gradient, 1.0);\r\n"+
+                "	\r\n"+
+                "}\r\n";
+
+                
   	var camera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 5, -30), scene);
 	camera.position = new BABYLON.Vector3(0,5,-30);
 	camera.attachControl(canvas, false);
+	scene.activeCamera = camera;
 
 	
 
