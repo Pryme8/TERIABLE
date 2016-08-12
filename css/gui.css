@@ -108,6 +108,10 @@ action:active{
 	background:rgba(255,255,255,0.8);	
 }
 
+item action{
+font-size:0.6em;	
+}
+
 progressBar{
 	display:block;
 	position:absolute;
