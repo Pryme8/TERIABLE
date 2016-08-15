@@ -12,7 +12,12 @@ v3 = function(x,y,z){
 
 Teriable = {} || Teriable;
 
-Teriable.Core = function(){
+Teriable.Core = function(settings){
+	this.settings = {r_size:{x: settings.r_size.x || 2, y: settings.r_size.y || 2},
+					 b_size:{x: settings.b_size.x || 2000 , y: settings.b_size.y || 2000 },
+					 detail: settings.detail || 100,
+					 max_elevation: 2000 || settings.max_elevation
+					 };
 	this._state = 'init';
 	this._stack = [];
 	this._data = {
@@ -22,15 +27,107 @@ Teriable.Core = function(){
 		point_of_origin: v3(0.0,0.0,0.0),		
 	};
 	this.materialBank = [];
+	this.activeBlocks = [];
+	this.player = null;
+	this.pp = {current:{x:0,y:0}, last:{x:0,y:0}};
 	Teriable.Do.buildCanvas({},this);
+	
+	//BUILD FIRST BLOCKS
+	Teriable.Do.build_region(this);
 };
 
 Teriable.Do = {
+	build_region : function(parent){
+		
+		var playerPos = {x:Math.floor(parent.player.position.x/parent.settings.b_size.x),
+						 y:Math.floor(parent.player.position.z/parent.settings.b_size.y)};
+						 
+		console.log(playerPos);
+		
+		var active_blocks = [];
+		for(var j=playerPos.y-Math.floor(parent.settings.r_size.y*0.5); j<=playerPos.y+Math.floor(parent.settings.r_size.y*0.5); j++){
+			for(var k=playerPos.x-Math.floor(parent.settings.r_size.x*0.5); k<=playerPos.x+Math.floor(parent.settings.r_size.x*0.5); k++){
+			active_blocks.push({x:k,y:j});
+			}
+		}
+	
+	
+		if(parent.activeBlocks.length){
+			
+			
+		   $.each(active_blocks,function(i,e){
+			   		var ignore = false;
+					$.each(parent.activeBlocks, function(j,b){
+						if(b.loc.x == e.x && b.loc.y == e.y){
+							ignore = true;
+							return false;
+						}
+					});
+					if(ignore){
+						return true;
+					}else{
+						setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
+					}
+			});
+						
+					
+			
+		}else{
+			$.each(active_blocks,function(i,e){
+				setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
+			});
+		}
+		
+		
+		/*
+		$.each(active_blocks,function(i,e){
+			
+			if(parent.activeBlocks.length){
+				var activeTrigger = false;
+				var deleteID = -1;
+			
+				$.each(parent.activeBlocks, function(j,b){
+					if(b.loc.x == e.x && b.loc.y == e.y){
+						activeTrigger = true;
+						deleteID = -1;
+						return false;
+					}else{
+						deleteID = j;
+					}
+				});
+				
+				if(activeTrigger){
+					return true;
+				}else{
+					parent.activeBlocks[deleteID].dispose();
+					parent.activeBlocks.splice(deleteID,1);	
+					return true;
+				}
+				
+				
+				
+			setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
+			}else{
+		
+			setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
+			}
+		});*/
+	},
+	
 	create_block : function(args, parent){
 		var scene = parent._data.scene;
-		var newBlock = BABYLON.Mesh.CreateGround("g-block", 2000, 2000, 500, scene, true /*successCallback*/);
+		var x = args.x;
+		var y = args.y;
+		var offset = {x:(parent.settings.b_size.x)*x, y:(parent.settings.b_size.y)*y};
+		console.log("madeBlock:"+x+"|"+y+" - @"+offset.x+":"+offset.y);
+		
+		var newBlock = BABYLON.Mesh.CreateGround("g-block", parent.settings.b_size.x, parent.settings.b_size.y, parent.settings.detail, scene, true /*successCallback*/);
+		newBlock.position.x = offset.x;
+		newBlock.position.z = offset.y;
 		newBlock.material = parent.materialBank[0];
+		newBlock.loc = {x:x,y:y};
 		newBlock.body = newBlock.setPhysicsState(BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0.0, friction: 0.0001, restitution: 0.0});
+		parent.activeBlocks.push(newBlock);
 	},
 	
 	buildCanvas : function(args, parent){
@@ -265,13 +362,14 @@ Teriable.Do = {
 		scene.workerCollisions = true;
 		
 		scene.getPhysicsEngine().setTimeStep(1 / 120);
-		var temp = BABYLON.MeshBuilder.CreateTube("p-temp", {path: [v3(0.0,0.0,0.0), v3(0.0,2.0,0.0)], radius:0.5, tessellation:8}, scene);
+		var temp = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2, segments: 6}, scene);
 		temp.position.y = 0.0;
 		temp.position.z = 4.0;
 		
 		
 		
 		var player_box = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 1, segments: 4}, scene);
+		parent.player = player_box;
 		var refPoint = BABYLON.Mesh.CreateSphere("pref", 1, 0.01, scene);
 		refPoint.position.y = 0.0;
 		refPoint.position.z = 1.0;
@@ -514,10 +612,19 @@ Teriable.Do = {
 			}
 			 
 			
+			parent.pp.current = {x:Math.floor(player_box.position.x/parent.settings.b_size.x),
+								 y:Math.floor(player_box.position.z/parent.settings.b_size.y),
+								};
+			if(parent.pp.current.x != parent.pp.last.x || parent.pp.current.y != parent.pp.last.y ){
+				parent.pp.last.x = parent.pp.current.x, parent.pp.last.y = parent.pp.current.y;
+				console.log('rebuild');
+				Teriable.Do.build_region(parent);
+			}
 			
-			//console.log(player.speed);
+			
 
 		});
+		
 		
 		
 		
@@ -535,9 +642,7 @@ Teriable.Do = {
 	parent._data.scene = scene;
 	parent._data.canvas = canvas;
 	
-	//Build First Blocks
-	Teriable.Do.create_block({},parent);
-	
+		
 	},
 };
 
