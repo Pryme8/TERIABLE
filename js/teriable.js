@@ -21,14 +21,7 @@ window.addEventListener('DOMContentLoaded', function(){
 			
 		
 		
-			this._ground.material = new BABYLON.ShaderMaterial("teriableBasic", scene, {
-                    vertex: "teriableBasic",
-                    fragment: "teriableBasic",
-                },
-                    {
-                        attributes: ["position", "normal", "uv"],
-                        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
-                    });
+			this._ground.material = teriableBasic;
 					
 			TERIABLE.Region.push(this._ground);
 			//console.log("Made_Block"+id);
@@ -438,7 +431,7 @@ window.addEventListener('DOMContentLoaded', function(){
                 "varying vec2 vUV;\r\n"+
 
                 "// Refs\r\n"+
-                "uniform sampler2D textureSampler;\r\n"+
+                "uniform sampler2D textureBank;\r\n"+
                 "const vec3 up = vec3(0.0,1.0,0.0);\r\n"+
 
                 "float rangeV(float v, float x, float y){\r\n"+
@@ -566,6 +559,34 @@ window.addEventListener('DOMContentLoaded', function(){
                 "    \r\n"+
                 "    gl_FragColor = vec4(color, 1.);\r\n"+
                 "}\r\n";
+				
+				var textureBank = new Array();
+				var textureLocations = [
+				//ZONE 1:
+					"./textures/Beach_Rocks.jpg",//BASE
+					"./textures/Sand_2.jpg",//Angle Zone 1
+					"./textures/Sand_2.jpg",//Angle Zone 2
+					"./textures/Sand_1.jpg",//Angle Zone 3
+					"./textures/Rocks_2.jpg",//Angle Zone 4
+				];
+				
+				$.each(textureLocations, function(i,e){
+					textureBank.push(new BABYLON.Texture(e, scene));
+					textureBank[i].wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+					textureBank[i].wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
+					});
+					
+					
+				teriableBasic = new BABYLON.ShaderMaterial("teriableBasic", scene, {
+                    vertex: "teriableBasic",
+                    fragment: "teriableBasic",
+                	},
+                    {
+                        attributes: ["position", "normal", "uv"],
+                        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
+                    });
+				
+				teriableBasic.setTexture("textureBank", textureBank);
 
                 
   	var camera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 5, -30), scene);
