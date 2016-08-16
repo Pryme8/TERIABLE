@@ -2,9 +2,11 @@
 //8/13/2016 Andrew V Butt Sr.
 //Pryme8@gmail.com | http://pryme8.github.io
 
-window.onkeydown = function(e) { 
-    return !(e.keyCode == 32 || e.keyCode == 17 || e.keyCode == 91);
-};
+$(window).keypress(function(event) {
+    event.preventDefault();
+    return false;
+});
+
 
 v3 = function(x,y,z){
 	return new BABYLON.Vector3(x,y,z);
@@ -41,7 +43,7 @@ Teriable.Do = {
 		
 		var playerPos = {x:Math.floor(parent.player.position.x/parent.settings.b_size.x),
 						 y:Math.floor(parent.player.position.z/parent.settings.b_size.y)};
-						 
+								 
 		console.log(playerPos);
 		
 		var active_blocks = [];
@@ -54,21 +56,42 @@ Teriable.Do = {
 	
 		if(parent.activeBlocks.length){
 			
-			
+			var deletes = [];
 		   $.each(active_blocks,function(i,e){
 			   		var ignore = false;
+					var deleteFlag = -1;
 					$.each(parent.activeBlocks, function(j,b){
 						if(b.loc.x == e.x && b.loc.y == e.y){
 							ignore = true;
 							return false;
 						}
+						if((b.loc.x< playerPos.x-Math.floor(parent.settings.r_size.x*0.5) ||
+					   b.loc.x > playerPos.x+Math.floor(parent.settings.r_size.x*0.5)) ||
+					   (b.loc.y < playerPos.y-Math.floor(parent.settings.r_size.y*0.5) ||
+					   b.loc.y > playerPos.y+Math.floor(parent.settings.r_size.y*0.5))
+					   ){
+						   console.log("DELETE FLAG:"+j);
+					   deleteFlag = j;
+					   return false;
+					   }
 					});
 					if(ignore){
 						return true;
-					}else{
+					}else if(deleteFlag != -1){
+						parent.activeBlocks[deleteFlag].dispose();
+						parent.activeBlocks.splice(deleteFlag,1);
+					
+					}else{					
 						setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
 					}
 			});
+			
+			
+			
+					
+				
+				
+			
 						
 					
 			
@@ -78,40 +101,6 @@ Teriable.Do = {
 			});
 		}
 		
-		
-		/*
-		$.each(active_blocks,function(i,e){
-			
-			if(parent.activeBlocks.length){
-				var activeTrigger = false;
-				var deleteID = -1;
-			
-				$.each(parent.activeBlocks, function(j,b){
-					if(b.loc.x == e.x && b.loc.y == e.y){
-						activeTrigger = true;
-						deleteID = -1;
-						return false;
-					}else{
-						deleteID = j;
-					}
-				});
-				
-				if(activeTrigger){
-					return true;
-				}else{
-					parent.activeBlocks[deleteID].dispose();
-					parent.activeBlocks.splice(deleteID,1);	
-					return true;
-				}
-				
-				
-				
-			setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
-			}else{
-		
-			setTimeout(function(){Teriable.Do.create_block({x:e.x,y:e.y}, parent)},0);
-			}
-		});*/
 	},
 	
 	create_block : function(args, parent){
