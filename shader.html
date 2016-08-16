@@ -45,11 +45,7 @@
          camera.setTarget(BABYLON.Vector3.Zero());
 
          camera.attachControl(canvas, false);
-		 
-		 camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
-		 camera.inputs.removeByType("FreeCameraMouseMoveInput");
-		 
-		 
+		
 		 BABYLON.Effect.ShadersStore["teriableBasicVertexShader"]= "precision highp float;\r\n"+
 
                 "// Attributes\r\n"+
@@ -85,7 +81,13 @@
                 "varying vec2 vUV;\r\n"+
 
                 "// Refs\r\n"+
-                "uniform sampler2D baseTexture[3];\r\n"+	
+                "uniform sampler2D z1b[3];\r\n"+
+				"uniform sampler2D z1a0[3];\r\n"+
+				"uniform sampler2D z1a1[3];\r\n"+
+				"uniform sampler2D z1a2[3];\r\n"+
+				"uniform sampler2D z1a3[3];\r\n"+	
+				
+				
 					"int getIndex(float v) {\r\n"+
    					"if( v>=0.0 && v < 0.35){\r\n"+
        					"return 0;\r\n"+
@@ -94,8 +96,13 @@
    					"}else{\r\n"+
         				"return 2;\r\n"+
     				"}\r\n"+
-					"}\r\n"+				
+					"}\r\n"+		
+					
+				"float rangeV(float v, float x, float y){\r\n"+
+                "    return 1.0-max(0.0 , min(1.0 , (v - y)/(y - x)));\r\n"+
+                "}\r\n"+	
 				
+								
 				                
 				"//http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl\r\n"+
                 "float snoise(vec2 co)\r\n"+
@@ -111,28 +118,89 @@
     				"}else{\r\n"+
         				"return texture2D(tex[2], vUV*60.0).rgb;\r\n"+
    					"}\r\n"+
-				"}\r\n"+
+				 "}\r\n"+
+				 
+				 "vec3 mixAngles(vec3 color, sampler2D a0[3],sampler2D a1[3],sampler2D a2[3],sampler2D a3[3], float ap[4], int tid){\r\n"+
+				 	"if(tid == 0){\r\n"+
+					"color = mix(color, texture2D(a3[0], vUV*60.0).rgb, ap[3]);\r\n"+
+					"color = mix(color, texture2D(a2[0], vUV*60.0).rgb, ap[2]);\r\n"+
+					"color = mix(color, texture2D(a1[0], vUV*60.0).rgb, ap[1]);\r\n"+
+					"color = mix(color, texture2D(a0[0], vUV*60.0).rgb, ap[0]);\r\n"+
+						"return color;\r\n"+
+					"}else if(tid == 2){\r\n"+
+					"color = mix(color, texture2D(a3[1], vUV*60.0).rgb, ap[3]);\r\n"+
+					"color = mix(color, texture2D(a2[1], vUV*60.0).rgb, ap[2]);\r\n"+
+					"color = mix(color, texture2D(a1[1], vUV*60.0).rgb, ap[1]);\r\n"+
+					"color = mix(color, texture2D(a0[1], vUV*60.0).rgb, ap[0]);\r\n"+
+						"return color;\r\n"+
+    				"}else{\r\n"+
+					"color = mix(color, texture2D(a3[2], vUV*60.0).rgb, ap[3]);\r\n"+
+					"color = mix(color, texture2D(a2[2], vUV*60.0).rgb, ap[2]);\r\n"+
+					"color = mix(color, texture2D(a1[2], vUV*60.0).rgb, ap[1]);\r\n"+
+					"color = mix(color, texture2D(a0[2], vUV*60.0).rgb, ap[0]);\r\n"+
+						"return color;\r\n"+
+   					"}\r\n"+
+				 "}\r\n"+
 				
 				
                 "void main(void) {\r\n"+
+				"   vec2 r[4];//RANGES\r\n"+
+                "   r[0] = vec2(0.0,10.0);\r\n"+
+                "   r[1] = vec2(10.0,15.0);\r\n"+
+                "   r[2] = vec2(15.0,45.0);\r\n"+
+                "   r[3] = vec2(45.0,50.0);\r\n"+
+				"   vec2 aR[4];\r\n"+
+                "   aR[0] = vec2(0.0,0.2);\r\n"+
+                "   aR[1] = vec2(0.2,0.45);\r\n"+
+                "   aR[2] = vec2(0.45,0.75);\r\n"+
+                "   aR[3] = vec2(0.75,1.0);\r\n"+
+                "   \r\n"+
+				
+				"const vec3 up = vec3(0.0,1.0,0.0);\r\n"+
+				"   float angle = max(0., dot(vNormalW, up));//ANGLE 0:1\r\n"+
+                "   float el = vPositionW.y; //ELEVATION\r\n"+
 				"vec2 pos = floor(vUV*60.0);\r\n"+ 
     			"int index = getIndex(snoise(pos));\r\n"+
-    			"vec3 cc = setBaseColor(index, baseTexture);\r\n"+
 				
-                "    gl_FragColor = vec4(cc, 1.0);\r\n"+
+				
+				
+    			"vec3 z1bc = setBaseColor(index, z1b);\r\n"+
+				
+				
+				"    float ap[4]; //Angle Blend PERCENTAGE\r\n"+
+                "    ap[0] = rangeV(angle, aR[0].x, aR[0].y);\r\n"+
+                "    ap[1] = rangeV(angle, aR[1].x, aR[1].y);\r\n"+
+                "    ap[2] = rangeV(angle, aR[2].x, aR[2].y);\r\n"+
+                "    ap[3] = rangeV(angle, aR[3].x, aR[3].y);\r\n"+
+                "    \r\n"+
+				
+				"vec3 z1xc = mixAngles(z1bc, z1a0, z1a1, z1a2, z1a3, ap, index);\r\n"+
+				
+				
+				
+				
+                "    gl_FragColor = vec4(z1xc, 1.0);\r\n"+
                 "}\r\n";
 				
 				
 				var textureBank = new Array();
 				var textureLocations = [
 				//ZONE 1:
-					"./textures/Beach_Rocks_A.jpg",//BASE A
-					"./textures/Beach_Rocks_B.jpg",//BASE B
-					"./textures/Beach_Rocks_C.jpg",//BASE C
-					"./textures/Sand_2.jpg",//Angle Zone 1
-					"./textures/Sand_2.jpg",//Angle Zone 2
-					"./textures/Sand_1.jpg",//Angle Zone 3
-					"./textures/Rocks_2.jpg",//Angle Zone 4
+					"./textures/Beach_Rocks_A.jpg",//Zone 1 BASE A
+					"./textures/Beach_Rocks_B.jpg",//Zone 1 BASE B
+					"./textures/Beach_Rocks_C.jpg",//Zone 1 BASE C
+					"./textures/Beach_Rocks2_A.jpg",//Zone 1 Angle 0 Zone A
+					"./textures/Beach_Rocks2_B.jpg",//Zone 1 Angle 0 Zone B
+					"./textures/Beach_Rocks2_C.jpg",//Zone 1 Angle 0 Zone C
+					"./textures/Beach_Rocks3_A.jpg",//Zone 1 Angle 1 Zone A
+					"./textures/Beach_Rocks3_B.jpg",//Zone 1 Angle 1 Zone B
+					"./textures/Beach_Rocks3_C.jpg",//Zone 1 Angle 1 Zone C
+					"./textures/Beach_Sand2_A.jpg",//Zone 1 Angle 2 Zone A
+					"./textures/Beach_Sand2_B.jpg",//Zone 1 Angle 2 Zone B
+					"./textures/Beach_Sand2_C.jpg",//Zone 1 Angle 2 Zone C
+					"./textures/Beach_Sand_A.jpg",//Zone 1 Angle 3 Zone A
+					"./textures/Beach_Sand_B.jpg",//Zone 1 Angle 3 Zone B
+					"./textures/Beach_Sand_C.jpg",//Zone 1 Angle 3 Zone C
 				];
 				
 				$.each(textureLocations, function(i,e){
@@ -149,16 +217,28 @@
                         uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
                     });
 				
-				teriableBasic.setTexture("baseTexture[0]", textureBank[0]);
-		 		teriableBasic.setTexture("baseTexture[1]", textureBank[1]);
-				teriableBasic.setTexture("baseTexture[2]", textureBank[2]);
+				teriableBasic.setTexture("z1b[0]", textureBank[0]);
+		 		teriableBasic.setTexture("z1b[1]", textureBank[1]);
+				teriableBasic.setTexture("z1b[2]", textureBank[2]);
+				teriableBasic.setTexture("z1a0[0]", textureBank[3]);
+		 		teriableBasic.setTexture("z1a0[1]", textureBank[4]);
+				teriableBasic.setTexture("z1a0[2]", textureBank[5]);
+				teriableBasic.setTexture("z1a1[0]", textureBank[6]);
+		 		teriableBasic.setTexture("z1a1[1]", textureBank[7]);
+				teriableBasic.setTexture("z1a1[2]", textureBank[8]);
+				teriableBasic.setTexture("z1a2[0]", textureBank[9]);
+		 		teriableBasic.setTexture("z1a2[1]", textureBank[10]);
+				teriableBasic.setTexture("z1a2[2]", textureBank[11]);
+				teriableBasic.setTexture("z1a3[0]", textureBank[12]);
+		 		teriableBasic.setTexture("z1a3[1]", textureBank[13]);
+				teriableBasic.setTexture("z1a3[2]", textureBank[14]);
 		 
 
          var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
 
          light.intensity = .5;
 
-        var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "./textures/displace_1.jpg", 200, 200, 500, 0, 40, scene, false);
+        var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "./textures/displace_1.jpg", 200, 200, 200, 0, 40, scene, false);
 		ground.material = teriableBasic;
      
          return scene;
