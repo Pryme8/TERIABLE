@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Shader_Work</title>
+
+   <style>
+      html, body {
+         overflow: hidden;
+         width: 100%;
+         height: 100%;
+         margin: 0;
+         padding: 0;
+      }
+      #renderCanvas {
+         width: 100%;
+         height: 100%;
+         touch-action: none;
+      }
+   </style>
+   
+	<script src="./js/jquery-2.2.0.min.js"></script>
+    <script src="./js/hand.base.js"></script>
+    <script src="./js/hand.css.js"></script>
+    <script src="http://cdn.jsdelivr.net/babylonjs/2.4/babylon.min.js" ></script>
+
+</head>
+<body>
+   <canvas id="renderCanvas"></canvas>
+   <script type="text/javascript">
+
+   
+      var canvas = document.querySelector("#renderCanvas");
+      var engine = new BABYLON.Engine(canvas, true);
+      // -------------------------------------------------------------
+
+      var createScene = function () {
+
+         var scene = new BABYLON.Scene(engine);
+
+         scene.clearColor = new BABYLON.Color3(0, 1, 0);
+
+         var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 70, -175), scene);
+
+         camera.setTarget(BABYLON.Vector3.Zero());
+
+         camera.attachControl(canvas, false);
+		 
+		 camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
+		 camera.inputs.removeByType("FreeCameraMouseMoveInput");
+		 
+		 
+		 BABYLON.Effect.ShadersStore["teriableBasicVertexShader"]= "precision highp float;\r\n"+
+
+                "// Attributes\r\n"+
+                "attribute vec3 position;\r\n"+
+                "attribute vec3 normal;\r\n"+
+                "attribute vec2 uv;\r\n"+
+
+                "// Uniforms\r\n"+
+                "uniform mat4 world;\r\n"+
+                "uniform mat4 worldViewProjection;\r\n"+
+
+                "// Varying\r\n"+
+                "varying vec3 vPositionW;\r\n"+
+                "varying vec3 vNormalW;\r\n"+
+                "varying vec2 vUV;\r\n"+
+
+                "void main(void) {\r\n"+
+                "    vec4 outPosition = worldViewProjection * vec4(position, 1.0);\r\n"+
+                "    gl_Position = outPosition;\r\n"+
+                "    \r\n"+
+                "    vPositionW = vec3(world * vec4(position, 1.0));\r\n"+
+                "    vNormalW = normalize(vec3(world * vec4(normal, 0.0)));\r\n"+
+                "    \r\n"+
+                "    vUV = uv;\r\n"+
+                "}\r\n";
+				
+				BABYLON.Effect.ShadersStore["teriableBasicFragmentShader"]= 
+				"precision highp float;\r\n"+
+
+                "// Lights\r\n"+
+                "varying vec3 vPositionW;\r\n"+
+                "varying vec3 vNormalW;\r\n"+
+                "varying vec2 vUV;\r\n"+
+
+                "// Refs\r\n"+
+                "uniform sampler2D baseTexture[3];\r\n"+	
+					"int getIndex(float v) {\r\n"+
+   					"if( v>=0.0 && v < 0.35){\r\n"+
+       					"return 0;\r\n"+
+    				"}else if( v>=0.35 && v < 0.65 ){\r\n"+
+        				"return 1;\r\n"+
+   					"}else{\r\n"+
+        				"return 2;\r\n"+
+    				"}\r\n"+
+					"}\r\n"+				
+				
+				                
+				"//http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl\r\n"+
+                "float snoise(vec2 co)\r\n"+
+                "{\r\n"+
+                "    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);\r\n"+
+                "}\r\n"+
+				
+				"vec3 setBaseColor(int i, sampler2D tex[3]){\r\n"+
+    				"if(i == 0){\r\n"+
+        				"return texture2D(tex[0], vUV*60.0).rgb;\r\n"+
+    				"}else if(i == 2){\r\n"+
+        				"return texture2D(tex[1], vUV*60.0).rgb;\r\n"+
+    				"}else{\r\n"+
+        				"return texture2D(tex[2], vUV*60.0).rgb;\r\n"+
+   					"}\r\n"+
+				"}\r\n"+
+				
+				
+                "void main(void) {\r\n"+
+				"vec2 pos = floor(vUV*60.0);\r\n"+ 
+    			"int index = getIndex(snoise(pos));\r\n"+
+    			"vec3 cc = setBaseColor(index, baseTexture);\r\n"+
+				
+                "    gl_FragColor = vec4(cc, 1.0);\r\n"+
+                "}\r\n";
+				
+				
+				var textureBank = new Array();
+				var textureLocations = [
+				//ZONE 1:
+					"./textures/Beach_Rocks_A.jpg",//BASE A
+					"./textures/Beach_Rocks_B.jpg",//BASE B
+					"./textures/Beach_Rocks_C.jpg",//BASE C
+					"./textures/Sand_2.jpg",//Angle Zone 1
+					"./textures/Sand_2.jpg",//Angle Zone 2
+					"./textures/Sand_1.jpg",//Angle Zone 3
+					"./textures/Rocks_2.jpg",//Angle Zone 4
+				];
+				
+				$.each(textureLocations, function(i,e){
+					textureBank.push(new BABYLON.Texture(e, scene));
+					});
+					
+					
+				teriableBasic = new BABYLON.ShaderMaterial("teriableBasic", scene, {
+                    vertex: "teriableBasic",
+                    fragment: "teriableBasic",
+                	},
+                    {
+                        attributes: ["position", "normal", "uv"],
+                        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection"]
+                    });
+				
+				teriableBasic.setTexture("baseTexture[0]", textureBank[0]);
+		 		teriableBasic.setTexture("baseTexture[1]", textureBank[1]);
+				teriableBasic.setTexture("baseTexture[2]", textureBank[2]);
+		 
+
+         var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+
+         light.intensity = .5;
+
+        var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "./textures/displace_1.jpg", 200, 200, 500, 0, 40, scene, false);
+		ground.material = teriableBasic;
+     
+         return scene;
+      };
+      // -------------------------------------------------------------
+   
+      var scene = createScene();
+
+      engine.runRenderLoop(function () {
+         scene.render();
+      });
+     
+      window.addEventListener("resize", function () {
+         engine.resize();
+      });
+   </script>
+</body>
+</html>
